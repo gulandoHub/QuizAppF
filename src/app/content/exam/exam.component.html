@@ -1,0 +1,111 @@
+<div *ngIf="!examFinished" class="examMain blurred">
+  <div class="container">
+    <ngx-ui-loader [loaderId]="'exam_loader'" blur="10" text='Հարցերը բեռնվում են...'></ngx-ui-loader>
+    <div class="row exam" *ngIf="examStarted && questions.length>0" >
+      <div class="col-md-8 col-sm-8">
+        <pre class="question">
+          {{questions[curQuest].questionText }}
+        </pre>
+      </div>
+      <div class="col-md-4 col-sm-4 text-center" [ngClass]="answerClass">
+        <div class="exam_nav ">
+          <button type="button" class="btn btn-sm sht btn-secondary confirm" [disabled]="examResults[questions[curQuest].id]" (click)="confirmAnswer()">
+            <span>{{buttonText}}</span>
+          </button>
+          <button (click)="nextQuestion()" type="button" class="btn btn-sm sht btn-secondary">&#10152;</button>
+          <button (click)="saveAnswer()" type="button" class="btn btn-sm sht btn-secondary"
+            style="display: none">ՊԱՀՊԱՆԵԼ</button>
+        </div>
+        <div class="answers" *ngIf="allAnswerTypes[curAnsType]">
+          <form ngForm [ngSwitch]="curAnsType">
+            <div *ngSwitchCase="0">
+              <table>
+                <tbody>
+                  <tr *ngFor="let i of makeArray(allAnswerTypes[curAnsType].answerTypeConfiguration.count, 'range')">
+                    <th>{{i+1}}&nbsp;</th>
+                    <td>
+                      <input [ngClass]="{'correct': currentAnswer.correctAnswer.split(',').indexOf((i+1).toString()) >=0 }" type='{{inputTypes[allAnswerTypes[curAnsType].answerTypeConfiguration.type-1]}}' name="{{curAnsType}}_{{row}}_{{i}}"
+                        [disabled]="examResults[questions[curQuest].id]" [checked]="answerTypes[curAnsType][0][i]"
+                        (change)="selectAnswer($event, i,curAnsType,0)" title="Answer {{i+1}}" />
+                        
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div *ngSwitchCase="1">
+              <div *ngIf="showCorrectAnswer">
+                <input class="correct correct_answerType_{{curAnsType}}" name="correct_answerType_{{curAnsType}}"
+                  type='{{inputTypes[allAnswerTypes[curAnsType].answerTypeConfiguration.type-1]}}' length="2" maxlength="2"
+                  disabled=true value="{{currentAnswer.correctAnswer}}" title="Correct Answer" />
+                <br/>
+              </div>
+              <input class="answerType_{{curAnsType}}" name="answerType_{{curAnsType}}"
+                type='{{inputTypes[allAnswerTypes[curAnsType].answerTypeConfiguration.type-1]}}' length="2" maxlength="2"
+                [disabled]="examResults[questions[curQuest].id]" [(ngModel)]="answerTypes[curAnsType]" title="Answer" />
+              
+            </div>
+            <!-- 2 and 3 answerTypes -->
+            <div *ngSwitchDefault>
+              <table>
+                <thead>
+                  <tr>
+                    <th *ngIf="curAnsType==3">&nbsp;</th>
+                    <th *ngFor="let i of makeArray(allAnswerTypes[curAnsType].answerTypeConfiguration.count, 'range')">{{i+1}}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of makeArray(allAnswerTypes[curAnsType].answerTypeConfiguration.rowCount, 'range')">
+                    <td *ngIf="curAnsType==3">{{labels[row]}}</td>
+                    <td *ngFor="let i of makeArray(allAnswerTypes[curAnsType].answerTypeConfiguration.count, 'range')">
+                      <input [ngClass]="{'correct': currentAnswer.correctAnswer.split(',').indexOf((i+ (allAnswerTypes[curAnsType].answerTypeConfiguration.count*row) +1).toString()) >=0 }" type='{{inputTypes[allAnswerTypes[curAnsType].answerTypeConfiguration.type-1]}}' [disabled]="examResults[questions[curQuest].id]"
+                        [checked]="answerTypes[curAnsType][row][i]" (change)="selectAnswer($event, i,curAnsType, row)"
+                        title="Answer {{i+1}}" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </form>
+        </div>
+        Լրացվել է {{nbAnswered || 0}}<br />
+        Մնացել է {{(questions.length - nbAnswered) || 0 }}<br />
+        Ճիշտ է {{nbCorrectAnswers}}<br />
+        Սխալ է {{ nbAnswered - nbCorrectAnswers}}<br />
+        <br />
+        <button (click)="finishExam()" type="button" class="btn btn-sm sht btn-secondary">ԱՎԱՐՏԵԼ</button>
+
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="examFinished" class="">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4 col-sm-4 offset-md-4 blurred text-center">
+        <ul class="exam_res">
+          <li><span class="num">{{(questions.length) || 0 }}</span><span class="txt">Հարց</span>
+          <li><span class="num">{{nbAnswered || 0}}</span><span class="txt">Լրացվել է</span>
+          <li><span class="num">{{(questions.length - nbAnswered) || 0 }}</span><span class="txt">Չի լրացվել</span>
+          <li><span class="num">{{nbCorrectAnswers}}</span><span class="txt">Ճիշտ է</span>
+          <li><span class="num">{{ nbAnswered - nbCorrectAnswers}}</span><span class="txt">Սխալ է</span>
+          <li><span class="num">{{ nbScore }}</span><span class="txt">Ընդամենը միավոր</span>
+          <li><span class="num">{{ maxScore - nbScore}}</span><span class="txt">Չհավաքված միավոր</span>
+        </ul>
+        <br /><br />
+        <div style="width:200px; margin:auto;">
+          <button type="button" class="btn btn-sm sht btn-block" (click)="startExam()">
+            Սկսել կրկին
+          </button>
+          <button type="button" class="btn btn-sm sht btn-block" (click)="home()" >
+            Վերադառնալ
+          </button>
+          <!-- <button type="button" class="btn btn-sm sht btn-block" (click)="showErrors()">
+              Ցուցադրել սխալները
+            </button> -->
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
